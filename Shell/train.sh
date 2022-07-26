@@ -3,7 +3,7 @@
 
 
 nvidia-smi
-cd ../Generation_Model
+cd ../Code
 
 task_name='cpt-large'
 
@@ -15,7 +15,7 @@ PTM_name_or_path=$init_model_root/cpt-large/
 
 CUDA_VISIBLE_DEVICES=0 python run_train.py \
     --PTM_name_or_path $PTM_name_or_path \
-    --dataset_path /SISDC_GPFS/Home_SE/hy-suda/zfli/CODE/QuestionGeneration/DuReaderQG \
+    --dataset_path /SISDC_GPFS/Home_SE/hy-suda/zfli/CODE/QuestionGeneration/Data \
     --output_path $output_root/QuestionGeneration \
     --task_name $task_name \
     --max_src_len 128 \

@@ -47,7 +47,7 @@ class DuReaderQG_Dataset(Dataset):
         if os.path.isfile(self.dataset_path):
             target = self.dataset_path
         else:
-            target = os.path.join(self.dataset_path, f"{self.dataset_type}.json")
+            target = os.path.join(self.dataset_path, f"{self.dataset_type}.jsonl")
         data_list = load_data(target, mode='jsonl')
         if not self.evaluate:
             for data in data_list:

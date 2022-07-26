@@ -16,3 +16,5 @@ mail: li_zaaachary@163.com
 - 修改 Shell 中 `infer.sh` 的路径 (PTM_name_or_path, model_path, input_path, output_path)
 - `cd Shell`
 - `sh infer.sh`
+
+DUREADER-QG

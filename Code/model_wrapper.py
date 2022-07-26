@@ -7,6 +7,7 @@ import logging
 
 import torch
 from pytorch_lightning import LightningModule
+from rouge import Rouge
 
 from transformers import (
     AdamW, get_linear_schedule_with_warmup,
@@ -70,15 +71,42 @@ class Generation_Model(LightningModule):
     def validation_step(self, batch, batch_idx, dataloader_idx=0):
         outputs = self(**batch)
         val_loss, logits = outputs[:2]
+        generate_tokens = logits.argmax(-1)
+        groundtruth_tokens_list = []
+        generate_tokens_list = []
+        for generate, groundtruth in zip(generate_tokens, batch['labels']):
+            generate = generate.tolist()
+            groundtruth = groundtruth.tolist()
+            gen_end = groundtruth.index(102)
+            ground_end = groundtruth.index(102)
+            generate = generate[:gen_end]
+            groundtruth = groundtruth[:ground_end]
+            generate_tokens = self.tokenizer.decode(generate,skip_special_tokens=True).replace(' ','')
+            generate_tokens_list.append(generate_tokens)
+            
+            groundtruth_tokens = self.tokenizer.decode(groundtruth,skip_special_tokens=True).replace(' ','')
+            groundtruth_tokens_list.append(groundtruth_tokens)
+        
         self.log("val_loss", val_loss)
-        return {'loss': val_loss}
+        return {'loss': val_loss, 'groundtruth_tokens':groundtruth_tokens_list, 'generate_tokens':generate_tokens_list}
 
     def validation_epoch_end(self, validation_step_outputs):
         loss = torch.stack([x["loss"] for x in validation_step_outputs]).mean()
-        perplexity = torch.exp(torch.tensor(loss))
         self.log("val_loss", loss, prog_bar=True)
+        
+        perplexity = torch.exp(torch.tensor(loss))
         self.log("perplexity", perplexity, prog_bar=True)
-        logging.info(f"at step {self.global_step} - val_loss:{round(loss.item(), 5)}; perplexity:{round(perplexity.item(), 5)}")
+        
+        rouge = Rouge()
+        ground_truth_list = []
+        generate_list = []
+        for item in validation_step_outputs:
+            ground_truth_list.extend(item['groundtruth_tokens'])
+            generate_list.extend(item['generate_tokens'])
+        rougel = rouge.get_scores(generate_list, ground_truth_list, avg=True)['rouge-l']['f']
+        self.log("rougel", rougel, prog_bar=True)
+        
+        logging.info(f"at step {self.global_step} - val_loss:{round(loss.item(), 5)}; perplexity:{round(perplexity.item(), 5)}; rouge-l:{round(rougel, 5)}")
         return loss
 
     def set_example_num(self, example_num):
